@@ -1,10 +1,14 @@
 import Foundation
 
 enum FileSize {
+    private static let formatter: ByteCountFormatter = {
+        let f = ByteCountFormatter()
+        f.countStyle = .file
+        return f
+    }()
+
     static func formatted(_ bytes: Int64) -> String {
-        let formatter = ByteCountFormatter()
-        formatter.countStyle = .file
-        return formatter.string(fromByteCount: bytes)
+        formatter.string(fromByteCount: bytes)
     }
 
     static func directory(at url: URL) -> Int64 {

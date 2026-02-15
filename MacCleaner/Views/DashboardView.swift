@@ -1,10 +1,78 @@
 import SwiftUI
 
+enum AppTab: String, CaseIterable {
+    case cleaner = "Cleaner"
+    case system = "System"
+}
+
 struct DashboardView: View {
     @StateObject private var vm = CleanerViewModel()
+    @State private var showStats = false
+    @State private var activeTab: AppTab = .cleaner
 
     var body: some View {
         VStack(spacing: 0) {
+            // Top bar: tabs + stats toggle
+            HStack(spacing: 0) {
+                // Tab picker
+                HStack(spacing: 2) {
+                    ForEach(AppTab.allCases, id: \.self) { tab in
+                        Button(action: { withAnimation(.easeInOut(duration: 0.15)) { activeTab = tab } }) {
+                            HStack(spacing: 5) {
+                                Image(systemName: tab == .cleaner ? "trash" : "gauge.medium")
+                                    .font(.caption)
+                                Text(tab.rawValue)
+                                    .font(.callout)
+                            }
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 6)
+                            .background(activeTab == tab ? Color.accentColor.opacity(0.15) : Color.clear)
+                            .foregroundColor(activeTab == tab ? .accentColor : .secondary)
+                            .cornerRadius(6)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(3)
+                .background(Color(nsColor: .controlBackgroundColor).opacity(0.6))
+                .cornerRadius(8)
+
+                Spacer()
+
+                Button(action: { withAnimation { showStats.toggle() } }) {
+                    Image(systemName: "chart.bar")
+                        .font(.body)
+                        .foregroundColor(showStats ? .accentColor : .secondary)
+                }
+                .buttonStyle(.plain)
+                .help("Lifetime Clean Stats")
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 10)
+            .padding(.bottom, 4)
+
+            if showStats {
+                cleanStatsPanel
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
+
+            // Content
+            switch activeTab {
+            case .cleaner:
+                cleanerContent
+            case .system:
+                SystemStatsView()
+            }
+        }
+        .frame(minWidth: 680, minHeight: 520)
+        .background(Color(nsColor: .windowBackgroundColor))
+        .animation(.easeInOut(duration: 0.2), value: showStats)
+    }
+
+    // MARK: - Cleaner Content
+
+    private var cleanerContent: some View {
+        Group {
             switch vm.state {
             case .idle:
                 idleView
@@ -18,8 +86,67 @@ struct DashboardView: View {
                 doneView
             }
         }
-        .frame(minWidth: 680, minHeight: 520)
-        .background(Color(nsColor: .windowBackgroundColor))
+    }
+
+    // MARK: - Clean Stats Panel
+
+    private var cleanStatsPanel: some View {
+        VStack(spacing: 12) {
+            HStack {
+                Text("Lifetime Clean Stats")
+                    .font(.headline)
+                Spacer()
+            }
+
+            if CleanStats.totalScans > 0 {
+                HStack(spacing: 0) {
+                    statCard(icon: "flame.fill", color: .orange,
+                             value: FileSize.formatted(CleanStats.totalCleaned), label: "Total freed")
+                    statCard(icon: "trash.fill", color: .red,
+                             value: "\(CleanStats.totalItems)", label: "Items removed")
+                    statCard(icon: "magnifyingglass", color: .blue,
+                             value: "\(CleanStats.totalScans)", label: "Cleans done")
+                    if let lastClean = CleanStats.lastCleanFormatted {
+                        statCard(icon: "clock.fill", color: .green,
+                                 value: lastClean, label: "Last clean")
+                    }
+                }
+            } else {
+                HStack {
+                    Image(systemName: "chart.bar")
+                        .font(.title2)
+                        .foregroundColor(.secondary.opacity(0.5))
+                    Text("No cleans yet — run your first scan to start tracking")
+                        .font(.callout)
+                        .foregroundColor(.secondary)
+                }
+                .padding(.vertical, 8)
+            }
+        }
+        .padding(16)
+        .background(Color(nsColor: .controlBackgroundColor))
+        .cornerRadius(10)
+        .padding(.horizontal, 16)
+        .padding(.bottom, 4)
+    }
+
+    private func statCard(icon: String, color: Color, value: String, label: String) -> some View {
+        VStack(spacing: 6) {
+            Image(systemName: icon)
+                .font(.title3)
+                .foregroundColor(color)
+            Text(value)
+                .font(.caption)
+                .fontWeight(.semibold)
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+            Text(label)
+                .font(.caption2)
+                .foregroundColor(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
     }
 
     // MARK: - Idle
@@ -71,6 +198,12 @@ struct DashboardView: View {
                     .foregroundColor(.secondary)
             }
 
+            Button("Cancel") {
+                vm.cancelScan()
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.regular)
+
             Spacer()
         }
         .padding(40)
@@ -80,7 +213,6 @@ struct DashboardView: View {
 
     private var resultsView: some View {
         VStack(spacing: 0) {
-            // Header
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Scan Complete")
@@ -106,9 +238,8 @@ struct DashboardView: View {
 
             Divider()
 
-            // Category list
             ScrollView {
-                VStack(spacing: 1) {
+                LazyVStack(spacing: 1) {
                     ForEach(vm.results.indices, id: \.self) { idx in
                         CategoryRow(result: $vm.results[idx], vm: vm)
                     }
@@ -118,12 +249,9 @@ struct DashboardView: View {
 
             Divider()
 
-            // Bottom bar
             HStack {
-                Button("Rescan") {
-                    vm.scan()
-                }
-                .buttonStyle(.bordered)
+                Button("Rescan") { vm.scan() }
+                    .buttonStyle(.bordered)
 
                 Spacer()
 
@@ -213,11 +341,9 @@ struct DashboardView: View {
             diskGauge
 
             HStack(spacing: 16) {
-                Button("Done") {
-                    vm.reset()
-                }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
+                Button("Done") { vm.reset() }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
             }
 
             Spacer()
@@ -235,7 +361,7 @@ struct DashboardView: View {
                 Circle()
                     .trim(from: 0, to: vm.diskInfo.usedPercentage)
                     .stroke(
-                        diskColor,
+                        diskGaugeColor,
                         style: StrokeStyle(lineWidth: 12, lineCap: .round)
                     )
                     .rotationEffect(.degrees(-90))
@@ -258,7 +384,7 @@ struct DashboardView: View {
         }
     }
 
-    private var diskColor: Color {
+    private var diskGaugeColor: Color {
         let pct = vm.diskInfo.usedPercentage
         if pct > 0.9 { return .red }
         if pct > 0.75 { return .orange }

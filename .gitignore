@@ -22,3 +22,6 @@ Package.resolved
 # IDE
 .idea/
 .vscode/
+
+# Distribution (built locally)
+dist/

@@ -1,173 +1,74 @@
-# CleanMyMac — Free & Open Source
+# MacCleaner
 
-A free, open-source Mac cleaner. No subscriptions, no BS — just scan, review, and clean. Built with Swift.
+A free, open-source Mac cleaner with system monitoring. No subscriptions, no telemetry — scan, review, and clean. Built with Swift and SwiftUI.
 
-## Safety First
+## Download
 
-This app is designed to **never break anything**:
+- **[MacCleaner-v1.0.dmg](https://github.com/almokhtarbr/mac-cleaner/releases/latest)** — drag to Applications
+- **[MacCleaner-v1.0.zip](https://github.com/almokhtarbr/mac-cleaner/releases/latest)** — extract and run
 
-- **Nothing is auto-deleted** — every file must be reviewed and confirmed by you
-- **Trash-first deletion** — files go to Trash, never permanent delete. You can always recover
-- **Read-only scanning** — scanning never modifies or moves any file
-- **iCloud untouched** — we skip all iCloud Drive, iCloud Photos, and iCloud-synced folders entirely
-- **System files untouched** — never touches `/System/`, SIP-protected paths, or running app data
-- **Running app detection** — warns you if an app is running before cleaning its cache
-- **No root access by default** — only scans user-level paths unless you explicitly grant admin
-- **Dry run mode** — see exactly what would happen before committing
-- **Full operation log** — every action is logged so you can audit what happened
+> Requires macOS 14.0 (Sonoma) or later.
 
-### What we NEVER touch
+## How to Use
 
-| Protected | Why |
-|-----------|-----|
-| `/System/` | SIP-protected, would break macOS |
-| `~/Library/Mobile Documents/` | iCloud Drive sync folder |
-| `~/Library/Photos/` | iCloud Photos library |
-| `~/Library/CloudStorage/` | iCloud, Dropbox, Google Drive, OneDrive |
-| `~/Library/Mail/` | Email data — too risky |
-| `~/Library/Keychains/` | Passwords and keys |
-| `~/Library/Cookies/` | Auth sessions |
-| `~/Documents/` | User documents (only scanned for large files, never auto-selected) |
-| `~/Desktop/` | User files (same — scan only, never auto-selected) |
-| Running app caches | Checked via `NSRunningApplication` before cleanup |
+### Cleaner Tab
 
-## Features
+1. **Scan** — click the Scan button to analyze your Mac for junk files
+2. **Review** — expand each category to see individual files with sizes
+3. **Select/Deselect** — uncheck anything you want to keep
+4. **Clean** — click Clean to free disk space
 
-### MVP (v1.0)
+### System Tab
 
-- **Dashboard** — disk space overview, quick scan summary
-- **Cache Cleaner** — user app caches (`~/Library/Caches/`)
-- **Log Cleaner** — app and system logs (`~/Library/Logs/`)
-- **Xcode Cleaner** — DerivedData, old simulators, device support files
-- **Dev Tools Cleaner** — Homebrew, npm, yarn, pnpm, CocoaPods, Cargo caches
-- **Trash Emptier** — show Trash size, empty with confirmation
-- **Large Files Finder** — scan for files >100MB, sort by size, user picks what to remove
-- **Browser Cache** — Chrome, Firefox, Safari, Brave caches
+Switch to the **System** tab (top-left) to see live hardware stats:
 
-### v2.0
+- CPU usage (user/system/idle breakdown, updates every 2s)
+- Memory pressure (active, wired, compressed, free)
+- GPU info (name + VRAM via Metal)
+- Storage usage
+- Battery status (if applicable)
+- System uptime
 
-- **Duplicate Finder** — SHA256 hash-based detection, preview before delete
-- **App Uninstaller** — remove apps + their leftover Library files
-- **Docker Cleanup** — unused images, volumes, build cache
-- **iOS Backup Cleaner** — old device backups in MobileSync
-- **Startup Items Manager** — disable/remove login items
-- **Scheduled Cleaning** — weekly/monthly auto-scan with notification
+### Stats
 
-### v3.0
+Click the **chart icon** (top-right) to view lifetime cleaning stats — total freed, items removed, number of cleans.
 
-- **Visual Disk Map** — treemap showing what's eating space
-- **Smart Recommendations** — "You haven't opened X in 6 months"
-- **Language File Cleaner** — remove unused .lproj localizations
-- **Time Machine Snapshot Manager** — view and delete local snapshots
+## What It Cleans
 
-## Architecture
+| Category | What | How | Size Range |
+|----------|------|-----|------------|
+| App Caches | `~/Library/Caches/*`, `~/.cache/*` | Permanent delete | 5–20 GB |
+| Logs | `~/Library/Logs/*`, crash reports | Permanent delete | 500 MB–2 GB |
+| Xcode | DerivedData, simulators, device support, archives | Permanent delete | 5–50 GB |
+| Dev Tools | Homebrew, npm, yarn, pnpm, CocoaPods, Cargo, Gem, Gradle, Maven, pip, Go, NuGet | Permanent delete | 1–10 GB |
+| Docker | Dangling images, stopped containers, build cache | Docker CLI | 1–20 GB |
+| Project Leftovers | `node_modules`, `.venv`, `vendor`, `Pods`, `.build`, `target` in old projects | Permanent delete | 1–50 GB |
+| Browser Cache | Chrome, Firefox, Safari, Brave, Edge, Opera | Permanent delete | 500 MB–5 GB |
+| Large Files | Files > 100 MB in Downloads/Desktop/Documents | Move to Trash | Varies |
+| Trash | Files already in `~/.Trash` | Empty Trash | Varies |
 
-```
-MacCleaner/
-├── MacCleanerApp.swift              # App entry — single window app
-├── Views/
-│   ├── DashboardView.swift          # Main screen: disk stats + scan button
-│   ├── ScanResultsView.swift        # Results: categories, files, sizes, checkboxes
-│   ├── LargeFilesView.swift         # Large file browser with sorting
-│   └── SettingsView.swift           # Excluded paths, safety toggles
-├── Scanners/
-│   ├── Scanner.swift                # Protocol: all scanners conform to this
-│   ├── CacheScanner.swift           # ~/Library/Caches/
-│   ├── LogScanner.swift             # ~/Library/Logs/
-│   ├── XcodeScanner.swift           # DerivedData, simulators, device support
-│   ├── DevToolsScanner.swift        # Homebrew, npm, yarn, pnpm, Cargo, Gem
-│   ├── BrowserCacheScanner.swift    # Chrome, Firefox, Safari, Brave
-│   └── LargeFileScanner.swift       # Files > 100MB
-├── Models/
-│   ├── CleanableItem.swift          # File/folder: path, size, category, selected
-│   ├── ScanResult.swift             # Grouped results by category
-│   └── DiskInfo.swift               # Total/used/free disk space
-├── Services/
-│   ├── DiskAnalyzer.swift           # Disk space queries
-│   ├── SafeDeleter.swift            # Move to Trash (never permanent delete)
-│   ├── RunningAppChecker.swift      # Check if app is running before cleaning
-│   └── OperationLogger.swift        # Log every delete operation
-└── Utilities/
-    ├── FileSize.swift               # Human-readable file sizes
-    ├── ProtectedPaths.swift         # Hardcoded list of NEVER-TOUCH paths
-    └── AppIdentifier.swift          # Map cache folder → app name + icon
-```
+**Permanent delete** is used for files that regenerate automatically (caches, logs, build artifacts). Large files go to Trash so you can recover them.
 
-## Scan Categories & Paths
+## Safety
 
-### Cache Cleaner
-```
-~/Library/Caches/*           → 5-20 GB typical
-~/.cache/*                   → XDG cache
-```
-Safety: SAFE — apps regenerate caches on demand
+### Protected paths (never touched)
 
-### Log Cleaner
-```
-~/Library/Logs/*             → 500 MB - 2 GB
-~/Library/Logs/DiagnosticReports/
-```
-Safety: SAFE — old logs serve no purpose
+- iCloud: `~/Library/Mobile Documents/`, `~/Library/CloudStorage/`
+- User data: Photos, Mail, Messages, Calendars, Contacts, Safari
+- Credentials: Keychains, Cookies, `.ssh`, `.gnupg`, `.aws`, `.kube`
+- App settings: Preferences, Application Support, Containers
+- System: `/System/`, `/usr/`, `/bin/`, `/sbin/`, `/etc/`
+- Media: Music, Pictures, Movies
 
-### Xcode Cleaner
-```
-~/Library/Developer/Xcode/DerivedData/          → 5-50 GB
-~/Library/Developer/CoreSimulator/Devices/      → 5-20 GB
-~/Library/Developer/Xcode/iOS DeviceSupport/    → 5-30 GB
-~/Library/Developer/Xcode/Archives/             → 1-10 GB (CAUTION — show dates)
-~/Library/Developer/DeveloperDiskImages/
-```
-Safety: SAFE for DerivedData + simulators. CAUTION for archives (may want to keep recent)
+### Safety features
 
-### Dev Tools Cleaner
-```
-~/Library/Caches/Homebrew/         → 500 MB - 5 GB
-~/.npm/                            → 1-10 GB
-~/Library/Caches/Yarn/             → 500 MB - 3 GB
-~/.pnpm-store/                     → 1-5 GB
-~/.cocoapods/repos/                → 500 MB - 2 GB
-~/.cargo/registry/                 → 100 MB - 2 GB
-~/.gem/                            → 100 MB - 1 GB
-~/.gradle/caches/                  → 500 MB - 5 GB
-~/.m2/repository/                  → 500 MB - 5 GB
-```
-Safety: SAFE — all re-download on demand
+- Path comparison is case-insensitive with symlink resolution
+- Running apps are detected via `NSWorkspace` — their caches are skipped
+- Docker Desktop data is never auto-selected
+- Large files are never auto-selected
+- Every operation is logged to `~/Library/Logs/MacCleaner/`
 
-### Browser Cache
-```
-~/Library/Caches/Google/Chrome/
-~/Library/Caches/Firefox/Profiles/
-~/Library/Caches/com.apple.Safari/
-~/Library/Caches/BraveSoftware/
-```
-Safety: SAFE — websites reload assets
-
-### Large Files
-Scan `~/` for files >100MB, excluding protected paths. Show sorted list, user picks.
-
-## Tech Stack
-
-- **Swift + SwiftUI** — native macOS app
-- **FileManager** — file scanning and size calculation
-- **CryptoKit** — SHA256 for duplicate detection (v2)
-- **NSWorkspace** — move to Trash safely
-- **NSRunningApplication** — detect running apps
-- **DiskArbitration** — disk space info
-- **Concurrency (async/await)** — non-blocking scans with progress
-
-## Design Principles
-
-1. **Scan is always free, always safe** — read-only operation
-2. **User reviews everything** — no silent deletions
-3. **Trash first** — `NSWorkspace.shared.recycle()`, never `FileManager.removeItem()`
-4. **Skip if unsure** — if we can't determine safety, don't offer it
-5. **Show the app name** — don't show raw paths, resolve to app names + icons
-6. **Progress feedback** — scanning can take minutes, show real-time progress
-7. **Respect running apps** — check `NSRunningApplication` before touching caches
-
-## Install
-
-### Build from source (macOS 14+)
+## Build from Source
 
 ```bash
 git clone https://github.com/almokhtarbr/mac-cleaner.git
@@ -176,6 +77,83 @@ open MacCleaner.xcodeproj
 # Cmd+R to build and run
 ```
 
+### Create DMG
+
+```bash
+xcodebuild -scheme MacCleaner -configuration Release build \
+  CONFIGURATION_BUILD_DIR=./build
+
+mkdir -p /tmp/dmg && cp -R build/MacCleaner.app /tmp/dmg/ && \
+  ln -sf /Applications /tmp/dmg/Applications
+
+hdiutil create -volname "MacCleaner" -srcfolder /tmp/dmg \
+  -ov -format UDZO dist/MacCleaner-v1.0.dmg
+
+rm -rf /tmp/dmg
+```
+
+### Create ZIP
+
+```bash
+ditto -c -k --keepParent build/MacCleaner.app dist/MacCleaner-v1.0.zip
+```
+
+## Project Structure
+
+```
+MacCleaner/
+├── MacCleanerApp.swift                 # App entry — single window
+├── Views/
+│   ├── DashboardView.swift             # Main screen: tabs, cleaner flow, stats
+│   ├── CategoryRow.swift               # Expandable category with item checkboxes
+│   └── SystemStatsView.swift           # Live CPU/memory/GPU/disk/battery dashboard
+├── Models/
+│   ├── CleanableItem.swift             # File model: path, size, category, selected
+│   ├── CleanerViewModel.swift          # Scan/clean state machine
+│   ├── CleanStats.swift                # Lifetime stats (UserDefaults)
+│   ├── DiskInfo.swift                  # Disk space model
+│   └── SystemMonitor.swift             # Live CPU/memory/GPU/battery via mach/Metal/IOKit
+├── Scanners/
+│   ├── Scanner.swift                   # Protocol + shared helpers
+│   ├── CacheScanner.swift              # ~/Library/Caches/
+│   ├── LogScanner.swift                # ~/Library/Logs/
+│   ├── XcodeScanner.swift              # DerivedData, simulators, device support
+│   ├── DevToolsScanner.swift           # Homebrew, npm, yarn, Cargo, Gem, etc.
+│   ├── DockerScanner.swift             # Docker CLI: images, containers, build cache
+│   ├── ProjectLeftoversScanner.swift   # node_modules, .venv, vendor in projects
+│   ├── BrowserCacheScanner.swift       # Chrome, Firefox, Safari, Brave, Edge, Opera
+│   ├── LargeFileScanner.swift          # Files > 100 MB
+│   └── TrashScanner.swift              # ~/.Trash
+├── Services/
+│   ├── SafeDeleter.swift               # Delete logic: permanent vs trash vs docker CLI
+│   ├── RunningAppChecker.swift         # Detect running apps before cleaning
+│   ├── OperationLogger.swift           # Thread-safe daily log files
+│   └── DiskAnalyzer.swift              # Disk space queries
+└── Utilities/
+    ├── FileSize.swift                  # ByteCountFormatter + directory size calculation
+    ├── ProtectedPaths.swift            # 30+ hardcoded forbidden paths
+    └── AppIdentifier.swift             # Resolve cache folders → app name + icon
+```
+
+## Tech Stack
+
+- **Swift 5 + SwiftUI** — native macOS app, no Electron
+- **FileManager** — file scanning, directory enumeration, deletion
+- **Mach kernel APIs** — `host_statistics64()` for CPU and memory
+- **Metal** — GPU detection via `MTLCreateSystemDefaultDevice()`
+- **IOKit** — battery status via `IOPSCopyPowerSourcesInfo()`
+- **NSWorkspace** — running app detection, trash operations
+- **async/await** — non-blocking scans with cancellation support
+
+## Roadmap
+
+- [ ] Duplicate file finder (SHA256)
+- [ ] App uninstaller (remove app + Library leftovers)
+- [ ] iOS backup cleaner (`~/Library/Application Support/MobileSync/`)
+- [ ] Startup items manager
+- [ ] Visual disk map (treemap)
+- [ ] Scheduled cleaning with notifications
+
 ## License
 
-MIT — do whatever you want with it.
+MIT

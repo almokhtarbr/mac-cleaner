@@ -20,6 +20,9 @@ class CleanerViewModel: ObservableObject {
     @Published var errors: [String] = []
     @Published var diskBefore: Int64 = 0
     @Published var diskAfter: Int64 = 0
+    @Published var scanWarnings: [String] = []
+
+    private var scanTask: Task<Void, Never>?
 
     private let scanners: [CleanerScanner] = [
         CacheScanner(),
@@ -46,22 +49,47 @@ class CleanerViewModel: ObservableObject {
     }
 
     func scan() {
+        // Cancel any running scan
+        scanTask?.cancel()
+
         state = .scanning
         results = []
         errors = []
+        scanWarnings = []
 
-        Task {
+        scanTask = Task { [weak self] in
+            guard let self else { return }
+
             for scanner in scanners {
+                // Check cancellation between scanners
+                if Task.isCancelled { break }
+
                 scanProgress = "Scanning \(scanner.category.rawValue)..."
                 let items = await scanner.scan()
+
+                if Task.isCancelled { break }
+
                 if !items.isEmpty {
                     results.append(ScanResult(category: scanner.category, items: items))
                 }
             }
+
+            if Task.isCancelled {
+                state = .idle
+                scanProgress = ""
+                return
+            }
+
             diskInfo = DiskInfo.current()
             state = results.isEmpty ? .idle : .results
             scanProgress = ""
         }
+    }
+
+    func cancelScan() {
+        scanTask?.cancel()
+        state = .idle
+        scanProgress = ""
     }
 
     func toggleItem(category: CleanCategory, itemID: String) {
@@ -73,7 +101,6 @@ class CleanerViewModel: ObservableObject {
     func toggleAllInCategory(_ category: CleanCategory, selected: Bool) {
         guard let idx = results.firstIndex(where: { $0.category == category }) else { return }
         for i in results[idx].items.indices {
-            // Don't auto-select large files or archives
             if selected && (results[idx].items[i].category == .largeFiles) { continue }
             results[idx].items[i].isSelected = selected
         }
@@ -93,16 +120,11 @@ class CleanerViewModel: ObservableObject {
                 self.errors = result.errors
                 self.diskInfo = DiskInfo.current()
                 self.diskAfter = self.diskInfo.freeSpace
-                self.state = .done
-            }
-        }
-    }
 
-    func emptyTrash() {
-        Task.detached {
-            SafeDeleter.emptyTrash()
-            await MainActor.run { [weak self] in
-                self?.diskInfo = DiskInfo.current()
+                // Record stats
+                CleanStats.record(cleaned: result.freed, items: result.deleted)
+
+                self.state = .done
             }
         }
     }
@@ -113,6 +135,7 @@ class CleanerViewModel: ObservableObject {
         cleanedSize = 0
         cleanedCount = 0
         errors = []
+        scanWarnings = []
         diskInfo = DiskInfo.current()
     }
 }
