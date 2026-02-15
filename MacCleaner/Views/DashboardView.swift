@@ -154,13 +154,14 @@ struct DashboardView: View {
             ProgressView()
                 .scaleEffect(1.5)
 
-            Text("Moving files to Trash...")
+            Text("Cleaning...")
                 .font(.title3)
                 .foregroundColor(.secondary)
 
-            Text("You can recover them from Trash if needed")
+            Text("Caches and logs are deleted permanently (they regenerate).\nUser files go to Trash.")
                 .font(.caption)
                 .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
 
             Spacer()
         }
@@ -178,10 +179,18 @@ struct DashboardView: View {
                 .foregroundColor(.green)
 
             VStack(spacing: 8) {
-                Text("Cleaned \(FileSize.formatted(vm.cleanedSize))")
+                Text("\(FileSize.formatted(vm.cleanedSize)) freed")
                     .font(.title)
                     .fontWeight(.semibold)
-                Text("\(vm.cleanedCount) items moved to Trash")
+
+                let actualFreed = vm.diskAfter - vm.diskBefore
+                if actualFreed > 0 {
+                    Text("Disk space recovered: \(FileSize.formatted(actualFreed))")
+                        .font(.callout)
+                        .foregroundColor(.green)
+                }
+
+                Text("\(vm.cleanedCount) items cleaned")
                     .foregroundColor(.secondary)
             }
 
@@ -203,11 +212,13 @@ struct DashboardView: View {
 
             diskGauge
 
-            Button("Done") {
-                vm.reset()
+            HStack(spacing: 16) {
+                Button("Done") {
+                    vm.reset()
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
             }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
 
             Spacer()
         }

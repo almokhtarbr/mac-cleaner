@@ -15,9 +15,18 @@ struct CategoryRow: View {
                     .frame(width: 28)
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(result.category.rawValue)
-                        .font(.body)
-                        .fontWeight(.medium)
+                    HStack(spacing: 6) {
+                        Text(result.category.rawValue)
+                            .font(.body)
+                            .fontWeight(.medium)
+                        Text(result.category == .largeFiles ? "Trash" : "Delete")
+                            .font(.system(size: 9))
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 1)
+                            .background(result.category == .largeFiles ? Color.orange.opacity(0.15) : Color.red.opacity(0.1))
+                            .foregroundColor(result.category == .largeFiles ? .orange : .red)
+                            .cornerRadius(3)
+                    }
                     Text(result.category.description)
                         .font(.caption)
                         .foregroundColor(.secondary)

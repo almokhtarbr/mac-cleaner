@@ -18,6 +18,8 @@ class CleanerViewModel: ObservableObject {
     @Published var cleanedSize: Int64 = 0
     @Published var cleanedCount: Int = 0
     @Published var errors: [String] = []
+    @Published var diskBefore: Int64 = 0
+    @Published var diskAfter: Int64 = 0
 
     private let scanners: [CleanerScanner] = [
         CacheScanner(),
@@ -77,15 +79,29 @@ class CleanerViewModel: ObservableObject {
 
     func clean() {
         state = .cleaning
+        diskBefore = diskInfo.freeSpace
         let selectedItems = results.flatMap { $0.items.filter(\.isSelected) }
 
-        Task {
-            let result = SafeDeleter.trash(items: selectedItems)
-            cleanedSize = result.freed
-            cleanedCount = result.deleted
-            errors = result.errors
-            diskInfo = DiskInfo.current()
-            state = .done
+        Task.detached { [weak self] in
+            let result = SafeDeleter.clean(items: selectedItems)
+            await MainActor.run {
+                guard let self else { return }
+                self.cleanedSize = result.freed
+                self.cleanedCount = result.deleted
+                self.errors = result.errors
+                self.diskInfo = DiskInfo.current()
+                self.diskAfter = self.diskInfo.freeSpace
+                self.state = .done
+            }
+        }
+    }
+
+    func emptyTrash() {
+        Task.detached {
+            SafeDeleter.emptyTrash()
+            await MainActor.run { [weak self] in
+                self?.diskInfo = DiskInfo.current()
+            }
         }
     }
 

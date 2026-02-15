@@ -35,6 +35,18 @@ enum CleanCategory: String, CaseIterable, Identifiable {
         case .trash: return "Files already in Trash"
         }
     }
+
+    /// How this category is cleaned
+    var deletionMethod: String {
+        switch self {
+        case .caches, .logs, .xcode, .devTools, .browser:
+            return "Permanently deleted (regenerates automatically)"
+        case .trash:
+            return "Permanently deleted (empties Trash)"
+        case .largeFiles:
+            return "Moved to Trash (you can recover)"
+        }
+    }
 }
 
 struct CleanableItem: Identifiable, Hashable {
