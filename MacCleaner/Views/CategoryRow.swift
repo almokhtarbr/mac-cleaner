@@ -19,12 +19,13 @@ struct CategoryRow: View {
                         Text(result.category.rawValue)
                             .font(.body)
                             .fontWeight(.medium)
-                        Text(result.category == .largeFiles ? "Trash" : "Delete")
+                        let badge = badgeFor(result.category)
+                        Text(badge.label)
                             .font(.system(size: 9))
                             .padding(.horizontal, 5)
                             .padding(.vertical, 1)
-                            .background(result.category == .largeFiles ? Color.orange.opacity(0.15) : Color.red.opacity(0.1))
-                            .foregroundColor(result.category == .largeFiles ? .orange : .red)
+                            .background(badge.color.opacity(0.12))
+                            .foregroundColor(badge.color)
                             .cornerRadius(3)
                     }
                     Text(result.category.description)
@@ -96,5 +97,18 @@ struct ItemRow: View {
                 .foregroundColor(.secondary)
         }
         .padding(.vertical, 3)
+    }
+}
+
+private func badgeFor(_ category: CleanCategory) -> (label: String, color: Color) {
+    switch category {
+    case .largeFiles:
+        return ("Trash", .orange)
+    case .docker:
+        return ("CLI", .blue)
+    case .trash:
+        return ("Empty", .red)
+    default:
+        return ("Delete", .red)
     }
 }

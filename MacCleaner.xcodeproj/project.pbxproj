@@ -29,6 +29,8 @@
 		A100000020 /* OperationLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000020; };
 		A100000021 /* DiskAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000021; };
 		A100000022 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B100000022; };
+		A100000023 /* DockerScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000025; };
+		A100000024 /* ProjectLeftoversScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000026; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -56,6 +58,8 @@
 		B100000022 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		B100000023 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B100000024 /* MacCleaner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MacCleaner.entitlements; sourceTree = "<group>"; };
+		B100000025 /* DockerScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockerScanner.swift; sourceTree = "<group>"; };
+		B100000026 /* ProjectLeftoversScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectLeftoversScanner.swift; sourceTree = "<group>"; };
 		B100000099 /* MacCleaner.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MacCleaner.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -124,6 +128,8 @@
 				B100000012 /* BrowserCacheScanner.swift */,
 				B100000013 /* LargeFileScanner.swift */,
 				B100000014 /* TrashScanner.swift */,
+				B100000025 /* DockerScanner.swift */,
+				B100000026 /* ProjectLeftoversScanner.swift */,
 			);
 			path = Scanners;
 			sourceTree = "<group>";
@@ -242,6 +248,8 @@
 				A100000019 /* RunningAppChecker.swift in Sources */,
 				A100000020 /* OperationLogger.swift in Sources */,
 				A100000021 /* DiskAnalyzer.swift in Sources */,
+				A100000023 /* DockerScanner.swift in Sources */,
+				A100000024 /* ProjectLeftoversScanner.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

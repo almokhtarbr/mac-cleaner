@@ -6,6 +6,8 @@ enum CleanCategory: String, CaseIterable, Identifiable {
     case logs = "Logs"
     case xcode = "Xcode"
     case devTools = "Dev Tools"
+    case docker = "Docker"
+    case projectLeftovers = "Project Leftovers"
     case browser = "Browser Cache"
     case largeFiles = "Large Files"
     case trash = "Trash"
@@ -18,6 +20,8 @@ enum CleanCategory: String, CaseIterable, Identifiable {
         case .logs: return "doc.text"
         case .xcode: return "hammer"
         case .devTools: return "terminal"
+        case .docker: return "shippingbox"
+        case .projectLeftovers: return "folder.badge.minus"
         case .browser: return "globe"
         case .largeFiles: return "externaldrive"
         case .trash: return "trash"
@@ -30,6 +34,8 @@ enum CleanCategory: String, CaseIterable, Identifiable {
         case .logs: return "Diagnostic logs and crash reports"
         case .xcode: return "DerivedData, old simulators, device support"
         case .devTools: return "Homebrew, npm, yarn, CocoaPods, Cargo caches"
+        case .docker: return "Unused images, stopped containers, build cache"
+        case .projectLeftovers: return "node_modules, .venv, vendor, Pods in old projects"
         case .browser: return "Chrome, Firefox, Safari, Brave cached data"
         case .largeFiles: return "Files larger than 100 MB"
         case .trash: return "Files already in Trash"
@@ -39,8 +45,10 @@ enum CleanCategory: String, CaseIterable, Identifiable {
     /// How this category is cleaned
     var deletionMethod: String {
         switch self {
-        case .caches, .logs, .xcode, .devTools, .browser:
+        case .caches, .logs, .xcode, .devTools, .browser, .projectLeftovers:
             return "Permanently deleted (regenerates automatically)"
+        case .docker:
+            return "Removed via docker CLI"
         case .trash:
             return "Permanently deleted (empties Trash)"
         case .largeFiles:

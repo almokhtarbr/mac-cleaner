@@ -26,6 +26,8 @@ class CleanerViewModel: ObservableObject {
         LogScanner(),
         XcodeScanner(),
         DevToolsScanner(),
+        DockerScanner(),
+        ProjectLeftoversScanner(),
         BrowserCacheScanner(),
         LargeFileScanner(),
         TrashScanner(),
